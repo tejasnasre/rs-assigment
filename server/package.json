@@ -1,0 +1,27 @@
+{
+  "name": "rs-server",
+  "version": "1.0.0",
+  "description": "rs assigment",
+  "keywords": [
+    "rs",
+    "assigment"
+  ],
+  "license": "ISC",
+  "author": "tejasnasre <tejasnasre.dev@gmail.com>",
+  "type": "module",
+  "main": "server.ts",
+  "scripts": {
+    "dev": "nodemon src/server.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "@types/node": "^24.3.0",
+    "eslint": "^9.34.0",
+    "globals": "^16.3.0",
+    "jiti": "^2.5.1",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.42.0"
+  }
+}
