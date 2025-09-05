@@ -1,14 +1,15 @@
 import type { User } from "./user";
 
-export interface Store {
+export type Store = {
   id: string;
   name: string;
   address: string;
-  ownerId: string;
+  email: string;
+  phone?: string;
   overallRating: number;
   ratingCount: number;
-  createdAt: string;
-}
+  description?: string;
+};
 
 export interface Rating {
   id: string;
@@ -18,6 +19,7 @@ export interface Rating {
   createdAt: string;
   updatedAt: string;
   user?: User;
+  review?: string;
 }
 
 export interface StoreWithUserRating extends Store {

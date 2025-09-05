@@ -26,6 +26,15 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { Textarea } from "../../components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../components/ui/alert-dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -49,6 +58,10 @@ type FormValues = z.infer<typeof formSchema>;
 
 const CreateUser: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertTitle, setAlertTitle] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
 
   const form = useForm<FormValues>({
@@ -82,20 +95,24 @@ const CreateUser: React.FC = () => {
 
       await apiClient.post(endpoint, values);
 
-      // Show success message
-      alert(
+      // Set success alert
+      setAlertTitle("Success");
+      setAlertMessage(
         `User ${
           values.name
         } has been added successfully as a ${values.role.replace("_", " ")}`
       );
-
-      // Redirect to users list
-      navigate("/admin/users");
+      setIsSuccess(true);
+      setAlertOpen(true);
+      // Note: Navigation will happen after user clicks "OK" in the dialog
     } catch (error) {
       console.error("Error creating user:", error);
 
-      // Show error message
-      alert("Failed to create user. Please try again.");
+      // Set error alert
+      setAlertTitle("Error");
+      setAlertMessage("Failed to create user. Please try again.");
+      setIsSuccess(false);
+      setAlertOpen(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -224,6 +241,28 @@ const CreateUser: React.FC = () => {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Alert Dialog */}
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{alertMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                setAlertOpen(false);
+                if (isSuccess) {
+                  navigate("/admin/users");
+                }
+              }}
+            >
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

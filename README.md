@@ -4,6 +4,20 @@
 
 This is a full-stack application built with React, TypeScript, and Vite for the frontend client, and Express, PostgreSQL with Drizzle ORM for the backend. The application includes authentication and user management functionality with role-based access control using Row Level Security (RLS) in PostgreSQL.
 
+## test mails and password
+
+```
+ systemadmin@gmail.com - Systemadmin@123
+```
+
+```
+testuser1@gmail.com - Testuser@123
+```
+
+```
+teststore1@gmail.com - Teststore@123
+```
+
 ## Project Structure
 
 - `/client` - React frontend application with modern UI components

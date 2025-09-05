@@ -206,13 +206,13 @@ export const userApi = {
       setTimeout(() => {
         const totalUsers = mockUsers.length;
         const adminCount = mockUsers.filter(
-          (u) => u.role === "System Administrator"
+          (u) => u.role === "system_administrator"
         ).length;
         const normalUserCount = mockUsers.filter(
-          (u) => u.role === "Normal User"
+          (u) => u.role === "normal_user"
         ).length;
         const storeOwnerCount = mockUsers.filter(
-          (u) => u.role === "Store Owner"
+          (u) => u.role === "store_owner"
         ).length;
 
         resolve({

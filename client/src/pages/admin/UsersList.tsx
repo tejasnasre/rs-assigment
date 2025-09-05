@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import apiClient from "../../api/axios";
-import { useAuthStore } from "../../store/auth";
 import {
   Table,
   TableBody,
@@ -40,13 +39,12 @@ const UsersList: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthStore();
 
   // Filters
   const [nameFilter, setNameFilter] = useState("");
   const [emailFilter, setEmailFilter] = useState("");
   const [addressFilter, setAddressFilter] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -57,7 +55,8 @@ const UsersList: React.FC = () => {
         if (nameFilter) params.append("name", nameFilter);
         if (emailFilter) params.append("email", emailFilter);
         if (addressFilter) params.append("address", addressFilter);
-        if (roleFilter) params.append("role", roleFilter);
+        if (roleFilter && roleFilter !== "all")
+          params.append("role", roleFilter);
 
         const response = await apiClient.get(
           `/admin/users?${params.toString()}`
@@ -143,7 +142,7 @@ const UsersList: React.FC = () => {
                 <SelectValue placeholder="All roles" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All roles</SelectItem>
+                <SelectItem value="all">All roles</SelectItem>
                 <SelectItem value="system_administrator">Admin</SelectItem>
                 <SelectItem value="normal_user">User</SelectItem>
                 <SelectItem value="store_owner">Store Owner</SelectItem>

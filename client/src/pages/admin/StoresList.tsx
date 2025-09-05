@@ -9,7 +9,6 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import { Input } from "../../components/ui/input";
-import { Button } from "../../components/ui/button";
 import { Link } from "react-router-dom";
 import { StarIcon } from "lucide-react";
 
