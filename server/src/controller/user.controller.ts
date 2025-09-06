@@ -138,7 +138,7 @@ export const loginUser = async (req: Request, res: Response) => {
       .update(users)
       .set({
         loginAttempts: 0,
-        lastLogin: new Date(),
+        lastLogin: new Date().toISOString(),
       })
       .where(eq(users.id, user.id));
 
@@ -253,7 +253,7 @@ export const updatePassword = async (req: Request, res: Response) => {
       .update(users)
       .set({
         password: hashedPassword,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(users.id, req.user.userId));
 

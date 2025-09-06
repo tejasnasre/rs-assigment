@@ -14,6 +14,27 @@ import {
   pgEnum,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+
+/**
+ * Helper class to manage Row Level Security (RLS) context in PostgreSQL
+ * Sets the current user ID in the PostgreSQL session for policy enforcement
+ */
+export class RLSContext {
+  /**
+   * Sets the user ID in the PostgreSQL session for RLS policies
+   * @param db Database connection
+   * @param userId User ID to set in context
+   */
+  static async setUserContext(
+    db: PostgresJsDatabase<Record<string, unknown>>,
+    userId: string
+  ): Promise<void> {
+    await db.execute(
+      sql`SELECT set_config('app.current_user_id', ${userId}, false)`
+    );
+  }
+}
 
 export const userRole = pgEnum("user_role", [
   "system_administrator",

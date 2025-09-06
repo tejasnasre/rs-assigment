@@ -335,7 +335,7 @@ export const updateStoreRating = async (req: Request, res: Response) => {
       .set({
         rating,
         review: review || null,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
       .where(
         sql`${storeRatings.storeId} = ${storeId} AND ${storeRatings.userId} = ${req.user.userId}`
