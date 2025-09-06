@@ -66,7 +66,7 @@ const UserProfile: React.FC = () => {
 
     try {
       // Call the API to update password
-      await apiClient.put("/user/password", {
+      await apiClient.put("/auth/update-password", {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
@@ -96,6 +96,7 @@ const UserProfile: React.FC = () => {
     );
   }
 
+  console.log(user);
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-2xl font-bold mb-6">Your Profile</h1>

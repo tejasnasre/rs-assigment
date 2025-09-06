@@ -194,8 +194,11 @@ const StoreView: React.FC = () => {
                   ))}
                 </div>
                 <span className="ml-2">
-                  ({store.overallRating.toFixed(1)}) from {store.ratingCount}{" "}
-                  ratings
+                  (
+                  {typeof store.overallRating === "number"
+                    ? store.overallRating.toFixed(1)
+                    : "0.0"}
+                  ) from {store.ratingCount} ratings
                 </span>
               </div>
             </div>

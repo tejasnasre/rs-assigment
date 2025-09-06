@@ -11,7 +11,7 @@ This is a full-stack application built with React, TypeScript, and Vite for the 
 ```
 
 ```
-testuser1@gmail.com - Testuser@123
+testuser1@gmail.com - TestUser@1234
 ```
 
 ```

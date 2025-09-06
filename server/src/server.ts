@@ -6,6 +6,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/user.routes.js";
 import adminRouter from "./routes/admin.routes.js";
+import storeRouter from "./routes/store.routes.js";
+import storeOwnerRouter from "./routes/store-owner.routes.js";
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -24,6 +26,11 @@ app.use(cookieParser());
 
 // Public and user routes
 app.use("/auth", userRouter);
+
+app.use("/stores", storeRouter);
+
+// Store owner routes
+app.use("/store-owner", storeOwnerRouter);
 
 // Admin routes
 app.use("/admin", adminRouter);

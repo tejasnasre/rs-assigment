@@ -485,3 +485,25 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch dashboard statistics" });
   }
 };
+
+/**
+ * Get all store owners for admin to assign to stores
+ */
+export const getAllStoreOwners = async (req: Request, res: Response) => {
+  try {
+    // Get all users with store_owner role
+    const storeOwners = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+      })
+      .from(users)
+      .where(sql`${users.role} = 'store_owner' AND ${users.isActive} = true`);
+
+    res.status(200).json(storeOwners);
+  } catch (error) {
+    console.error("Error fetching store owners:", error);
+    res.status(500).json({ message: "Failed to fetch store owners" });
+  }
+};

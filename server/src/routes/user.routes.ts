@@ -4,11 +4,6 @@ import {
   loginUser,
   logoutUser,
   updatePassword,
-  getAllStores,
-  searchStores,
-  getStoreDetails,
-  submitStoreRating,
-  updateStoreRating,
 } from "../controller/user.controller.js";
 import { authenticate, authorize } from "../middleware/auth.middleware.js";
 
@@ -25,12 +20,7 @@ router.get("/profile", authenticate, (req, res) => {
 });
 
 // Normal user routes
-router.put("/password", authenticate, updatePassword);
-router.get("/stores", authenticate, getAllStores);
-router.get("/stores/search", authenticate, searchStores);
-router.get("/stores/:storeId", authenticate, getStoreDetails);
-router.post("/stores/:storeId/ratings", authenticate, submitStoreRating);
-router.put("/stores/:storeId/ratings", authenticate, updateStoreRating);
+router.put("/update-password", authenticate, updatePassword);
 
 // Admin-only routes (example)
 router.get(

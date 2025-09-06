@@ -52,9 +52,11 @@ const UserStores: React.FC = () => {
         address: addressFilter || undefined,
       };
 
-      const response = await storeApi.getStoresWithUserRating(user.id, filters);
-      // Type assertion to expected response structure
-      setStores((response as { data: StoreWithUserRating[] }).data);
+      const response = await storeApi.getStoresWithUserRating({
+        userId: user.id,
+        ...filters,
+      });
+      setStores(response.data);
     } catch (err) {
       console.error("Error fetching stores:", err);
       if (err instanceof Error) {
@@ -70,7 +72,8 @@ const UserStores: React.FC = () => {
   // Initial fetch
   useEffect(() => {
     fetchStores();
-  }, []); // Removed fetchStores from dependency array to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally omitting fetchStores from dependency array to prevent infinite loops
 
   // Search with filters
   const handleSearch = () => {
@@ -199,8 +202,11 @@ const UserStores: React.FC = () => {
                     ))}
                   </div>
                   <span className="ml-2 text-sm text-gray-500">
-                    ({store.overallRating.toFixed(1)}) from {store.ratingCount}{" "}
-                    ratings
+                    (
+                    {typeof store.overallRating === "number"
+                      ? store.overallRating.toFixed(1)
+                      : "0.0"}
+                    ) from {store.ratingCount} ratings
                   </span>
                 </div>
                 {store.userRating ? (

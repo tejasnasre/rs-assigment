@@ -108,7 +108,7 @@ const StoresList: React.FC = () => {
         )}
 
         <span className="ml-2 text-sm text-gray-600">
-          {rating.toFixed(1)} (
+          {typeof rating === "number" ? rating.toFixed(1) : "0.0"} (
           {stores.find((s) => s.averageRating === rating)?.totalRatings || 0})
         </span>
       </div>
@@ -119,6 +119,26 @@ const StoresList: React.FC = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Stores Management</h1>
+        <Link
+          to="/admin/stores/create"
+          className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center"
+        >
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            />
+          </svg>
+          Create Store
+        </Link>
       </div>
 
       <div className="bg-white rounded-md shadow mb-6 p-4">

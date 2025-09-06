@@ -8,6 +8,7 @@ import {
   getAllStores,
   getDashboardStats,
   getUserDetails,
+  getAllStoreOwners,
 } from "../controller/admin.controller.js";
 import { authenticate, authorize } from "../middleware/auth.middleware.js";
 import { validateRequest } from "../middleware/validation.middleware.js";
@@ -43,11 +44,12 @@ router.post(
   createStoreOwner
 );
 router.get("/users", adminMiddleware, getAllUsers);
+router.get("/users/store-owners", adminMiddleware, getAllStoreOwners);
 router.get("/users/:userId", adminMiddleware, getUserDetails);
 
 // Store management routes
 router.post(
-  "/stores",
+  "/create-stores",
   adminMiddleware,
   validateRequest(createStoreSchema),
   createStore

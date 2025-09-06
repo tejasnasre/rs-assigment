@@ -77,6 +77,7 @@ const LoginPage: React.FC = () => {
       };
 
       login(userData);
+      console.log(userData);
 
       // Redirect based on user role
       if (userData.role === UserRole.ADMIN) {

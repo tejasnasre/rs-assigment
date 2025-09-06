@@ -110,7 +110,7 @@ const UserDetails: React.FC = () => {
         )}
 
         <span className="ml-2 text-sm text-gray-600">
-          {rating.toFixed(1)} (
+          {typeof rating === "number" ? rating.toFixed(1) : "0.0"} (
           {stores.find((s) => s.averageRating === rating)?.totalRatings || 0})
         </span>
       </div>
