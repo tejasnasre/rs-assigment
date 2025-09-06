@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { db } from "../db/index.js";
 import { stores, storeRatings } from "../db/schema.js";
 import { eq, asc, desc, like, sql } from "drizzle-orm";
+import { recalculateStoreRating } from "../utils/rating.utils.js";
 
 // Get a list of all active stores*This can be used by any authenticated user
 export const getAllStores = async (req: Request, res: Response) => {
@@ -81,6 +82,10 @@ export const getAllStores = async (req: Request, res: Response) => {
 // This can be used by any authenticated user
 export const searchStores = async (req: Request, res: Response) => {
   try {
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     // Get search parameters
     const { name, address } = req.query;
 
@@ -133,8 +138,36 @@ export const searchStores = async (req: Request, res: Response) => {
     const totalStores = countResult[0]?.count || 0;
     const totalPages = Math.ceil(totalStores / limit);
 
+    // For each store, check if the current user has rated it
+    const storesWithUserRatings = await Promise.all(
+      storeResults.map(async (store) => {
+        // Get user's rating for this store if exists
+        const userRatingResult = await db
+          .select({
+            id: storeRatings.id,
+            rating: storeRatings.rating,
+          })
+          .from(storeRatings)
+          .where(
+            sql`${storeRatings.storeId} = ${store.id} AND ${
+              storeRatings.userId
+            } = ${req.user!.userId}`
+          )
+          .limit(1);
+
+        // Add userRating property to the store object
+        return {
+          ...store,
+          userRating:
+            userRatingResult.length > 0 && userRatingResult[0]
+              ? userRatingResult[0].rating
+              : null,
+        };
+      })
+    );
+
     res.status(200).json({
-      stores: storeResults,
+      stores: storesWithUserRatings,
       pagination: {
         currentPage: page,
         totalPages,
@@ -271,6 +304,9 @@ export const submitStoreRating = async (req: Request, res: Response) => {
       })
       .returning();
 
+    // Recalculate and update the store's rating
+    await recalculateStoreRating(storeId);
+
     res.status(201).json({
       message: "Rating submitted successfully",
       rating: result[0],
@@ -330,6 +366,9 @@ export const updateStoreRating = async (req: Request, res: Response) => {
         sql`${storeRatings.storeId} = ${storeId} AND ${storeRatings.userId} = ${req.user.userId}`
       )
       .returning();
+
+    // Recalculate and update the store's rating
+    await recalculateStoreRating(storeId);
 
     res.status(200).json({
       message: "Rating updated successfully",

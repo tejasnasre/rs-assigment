@@ -11,7 +11,9 @@ export const storeApi = {
     return apiClient.get("/stores").then((response) => response.data);
   },
 
-  getStoreById: async (id: string): Promise<{ data: Store }> => {
+  getStoreById: async (
+    id: string
+  ): Promise<{ store: Store; userRating?: { rating: number } }> => {
     return apiClient.get(`/stores/${id}`).then((response) => response.data);
   },
 
@@ -106,6 +108,20 @@ export const storeApi = {
     return apiClient
       .post(`/stores/${storeId}/ratings`, {
         userId,
+        rating,
+        review,
+      })
+      .then((response) => response.data.rating);
+  },
+
+  // Update an existing rating
+  updateRating: async (
+    storeId: string,
+    rating: number,
+    review?: string
+  ): Promise<Rating> => {
+    return apiClient
+      .put(`/stores/${storeId}/ratings`, {
         rating,
         review,
       })

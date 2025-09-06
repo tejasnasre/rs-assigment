@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import apiClient from "../../api/axios";
+import { adminApi } from "../../api/admin";
 import {
   Card,
   CardContent,
@@ -16,6 +17,14 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import { StarIcon } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import { toast } from "sonner";
 
 interface User {
   id: string;
@@ -52,40 +61,61 @@ const UserDetails: React.FC = () => {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
   useEffect(() => {
-    const fetchUserDetails = async () => {
-      if (!id) {
-        setError("No user ID provided");
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const response = await apiClient.get(`/admin/users/${id}`);
-
-        if (response.data && response.data.user) {
-          setUser(response.data.user);
-
-          // If the user has stores, set them
-          if (response.data.stores && Array.isArray(response.data.stores)) {
-            setStores(response.data.stores);
-          } else {
-            setStores([]);
-          }
-        } else {
-          setError("User data not found in the response");
-        }
-      } catch {
-        setError("Failed to load user details");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUserDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const fetchUserDetails = async () => {
+    if (!id) {
+      setError("No user ID provided");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await apiClient.get(`/admin/users/${id}`);
+
+      if (response.data && response.data.user) {
+        setUser(response.data.user);
+
+        // If the user has stores, set them
+        if (response.data.stores && Array.isArray(response.data.stores)) {
+          setStores(response.data.stores);
+        } else {
+          setStores([]);
+        }
+      } else {
+        setError("User data not found in the response");
+      }
+    } catch {
+      setError("Failed to load user details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRoleUpdate = async (newRole: string) => {
+    if (!user || !id) return;
+
+    setIsUpdatingRole(true);
+    try {
+      const response = await adminApi.updateUserRole(id, newRole);
+
+      if (response.data && response.data.user) {
+        setUser({ ...user, role: response.data.user.role });
+        toast.success("User role updated successfully");
+      }
+    } catch (error) {
+      console.error("Error updating role:", error);
+      toast.error("Failed to update user role");
+    } finally {
+      setIsUpdatingRole(false);
+    }
+  };
 
   // Function to render stars based on rating
   const renderRatingStars = (rating: number | undefined) => {
@@ -180,17 +210,48 @@ const UserDetails: React.FC = () => {
               <div className="py-3 grid grid-cols-3">
                 <dt className="text-sm font-medium text-gray-500">Role</dt>
                 <dd className="text-sm text-gray-900 col-span-2">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      user.role === "system_administrator"
-                        ? "bg-purple-100 text-purple-800"
-                        : user.role === "store_owner"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {roleLabels[user.role] || user.role}
-                  </span>
+                  <div className="flex items-center space-x-3">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        user.role === "system_administrator"
+                          ? "bg-purple-100 text-purple-800"
+                          : user.role === "store_owner"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {roleLabels[user.role] || user.role}
+                    </span>
+
+                    <Select
+                      defaultValue={user.role}
+                      onValueChange={handleRoleUpdate}
+                      disabled={isUpdatingRole}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Change role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="normal_user">Normal User</SelectItem>
+                        <SelectItem value="store_owner">Store Owner</SelectItem>
+                        <SelectItem value="system_administrator">
+                          Administrator
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {isUpdatingRole && (
+                    <p className="mt-2 text-xs text-blue-500">
+                      Updating role...
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-gray-500">
+                    Change user role to grant different permissions.
+                    {user.role !== "store_owner" &&
+                      " Assign 'Store Owner' role to allow users to create and manage stores."}
+                    {user.role !== "system_administrator" &&
+                      " The 'Administrator' role grants full system access."}
+                  </p>
                 </dd>
               </div>
             </dl>

@@ -107,12 +107,22 @@ const UserStores: React.FC = () => {
     }
 
     setSubmittingRating(true);
+    setError(null);
 
     try {
-      await storeApi.submitRating(user.id, {
-        storeId: selectedStoreId,
-        rating: newRating,
-      });
+      // Check if user already rated this store
+      const store = stores.find((s) => s.id === selectedStoreId);
+
+      if (store?.userRating) {
+        // Update existing rating
+        await storeApi.updateRating(selectedStoreId, newRating);
+      } else {
+        // Submit new rating
+        await storeApi.submitRating(user.id, {
+          storeId: selectedStoreId,
+          rating: newRating,
+        });
+      }
 
       // Update local state
       setStores((prev) =>
@@ -126,10 +136,44 @@ const UserStores: React.FC = () => {
       setRatingDialogOpen(false);
     } catch (err) {
       console.error("Error submitting rating:", err);
-      if (err instanceof Error) {
+
+      // Check for the specific error message about already rating
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      const errorMessage = axiosError?.response?.data?.message;
+
+      if (
+        errorMessage ===
+        "You have already rated this store. Use the update endpoint instead."
+      ) {
+        // If we get this error, it means our local state is out of sync with the server
+        // Update the local state to reflect that the user has already rated this store
+        setStores((prev) =>
+          prev.map((store) =>
+            store.id === selectedStoreId
+              ? { ...store, userRating: newRating }
+              : store
+          )
+        );
+
+        // Then try to update the rating instead
+        try {
+          await storeApi.updateRating(selectedStoreId, newRating);
+          setRatingDialogOpen(false);
+          return;
+        } catch (updateErr) {
+          console.error("Error updating rating:", updateErr);
+          const updateAxiosError = updateErr as {
+            response?: { data?: { message?: string } };
+          };
+          setError(
+            updateAxiosError?.response?.data?.message ||
+              "Failed to update rating. Please try again."
+          );
+        }
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Failed to submit rating. Please try again.");
+        setError(errorMessage || "Failed to submit rating. Please try again.");
       }
     } finally {
       setSubmittingRating(false);
@@ -285,7 +329,11 @@ const UserStores: React.FC = () => {
               onClick={handleSubmitRating}
               disabled={submittingRating || newRating < 1}
             >
-              {submittingRating ? "Submitting..." : "Submit Rating"}
+              {submittingRating
+                ? "Submitting..."
+                : stores.find((s) => s.id === selectedStoreId)?.userRating
+                ? "Update Rating"
+                : "Submit Rating"}
             </Button>
           </DialogFooter>
         </DialogContent>

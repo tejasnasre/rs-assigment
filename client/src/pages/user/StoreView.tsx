@@ -39,35 +39,63 @@ const StoreView: React.FC = () => {
 
   useEffect(() => {
     const fetchStoreData = async () => {
-      if (!id || !user?.id) return;
+      if (!id) {
+        setError("Store ID is required");
+        setIsLoading(false);
+        return;
+      }
+
+      if (!user?.id) {
+        setError("Authentication required");
+        setIsLoading(false);
+        return;
+      }
 
       setIsLoading(true);
       setError(null);
 
       try {
         // Fetch store details
-        const storeResponse = (await storeApi.getStoreById(id)) as {
-          data: Store;
-        };
-        setStore(storeResponse.data);
+        const storeResponse = await storeApi.getStoreById(id);
+
+        if (storeResponse.store) {
+          setStore(storeResponse.store);
+
+          // If the API also returned the user's rating
+          if (storeResponse.userRating) {
+            setUserRating(storeResponse.userRating.rating);
+            setNewRating(storeResponse.userRating.rating);
+          }
+        } else {
+          setError("Failed to load store details. Unexpected response format.");
+          return;
+        }
 
         // Fetch store ratings
-        const ratingsResponse = (await storeApi.getRatingsForStore(id)) as {
-          data: Rating[];
-        };
-        setStoreRatings(ratingsResponse.data);
+        try {
+          const ratingsResponse = (await storeApi.getRatingsForStore(id)) as {
+            data: Rating[];
+          };
 
-        // Get user's rating for this store if exists
-        const userRating = ratingsResponse.data.find(
-          (rating) => rating.userId === user.id
-        );
+          if (ratingsResponse.data) {
+            setStoreRatings(ratingsResponse.data);
 
-        if (userRating) {
-          setUserRating(userRating.rating);
-          setNewRating(userRating.rating);
+            // Get user's rating for this store if exists
+            if (user?.id) {
+              const userRatingObj = ratingsResponse.data.find(
+                (rating) => rating.userId === user.id
+              );
+
+              if (userRatingObj) {
+                setUserRating(userRatingObj.rating);
+                setNewRating(userRatingObj.rating);
+              }
+            }
+          }
+        } catch {
+          // We don't fail the whole component if just ratings fail
         }
       } catch (err) {
-        console.error("Error fetching store data:", err);
         if (err instanceof Error) {
           setError(err.message);
         } else {
@@ -96,19 +124,26 @@ const StoreView: React.FC = () => {
     setSubmittingRating(true);
 
     try {
-      await storeApi.submitRating(user.id, {
-        storeId: id,
-        rating: newRating,
-      });
+      // Check if user already has a rating for this store
+      if (userRating) {
+        // Update existing rating
+        await storeApi.updateRating(id, newRating);
+      } else {
+        // Submit new rating
+        await storeApi.submitRating(user.id, {
+          storeId: id,
+          rating: newRating,
+        });
+      }
 
       // Update local state
       setUserRating(newRating);
 
       // Refresh store data to get updated ratings
-      const storeResponse = (await storeApi.getStoreById(id)) as {
-        data: Store;
-      };
-      setStore(storeResponse.data);
+      const refreshedStoreResponse = await storeApi.getStoreById(id);
+      if (refreshedStoreResponse.store) {
+        setStore(refreshedStoreResponse.store);
+      }
 
       const ratingsResponse = (await storeApi.getRatingsForStore(id)) as {
         data: Rating[];
@@ -117,7 +152,6 @@ const StoreView: React.FC = () => {
 
       setRatingDialogOpen(false);
     } catch (err) {
-      console.error("Error submitting rating:", err);
       if (err instanceof Error) {
         setError(err.message);
       } else {

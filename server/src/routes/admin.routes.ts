@@ -11,6 +11,7 @@ import {
   getAllStoreOwners,
   updateUserRole,
   getStoreById,
+  recalculateStoreRatings,
 } from "../controller/admin.controller.js";
 import { authenticate, authorize } from "../middleware/auth.middleware.js";
 import { validateRequest } from "../middleware/validation.middleware.js";
@@ -88,5 +89,8 @@ router.get("/stores/:id", adminMiddleware, getStoreById);
 
 // Dashboard stats
 router.get("/stats", adminMiddleware, getDashboardStats);
+
+// Recalculate store ratings
+router.post("/recalculate-ratings", adminMiddleware, recalculateStoreRatings);
 
 export default router;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -9,13 +9,9 @@ import {
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../components/ui/table";
+  SortableTable,
+  type SortDirection,
+} from "../../components/ui/sortable-table";
 import { storeOwnerApi } from "../../api/storeOwner";
 import type { Rating, Store } from "../../types/store";
 import type { User } from "../../types/user";
@@ -34,6 +30,11 @@ function StoreOwnerDashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Sorting state for ratings
+  type SortableRatingKey = keyof RatingWithUser | "user.name";
+  const [sortKey, setSortKey] = useState<SortableRatingKey | null>("createdAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
   useEffect(() => {
     const fetchStoreData = async () => {
       try {
@@ -51,6 +52,87 @@ function StoreOwnerDashboard() {
 
     fetchStoreData();
   }, []);
+
+  // Handle sort change
+  const handleSort = (key: string) => {
+    const typedKey = key as SortableRatingKey;
+
+    if (sortKey === typedKey) {
+      // Toggle direction if same key
+      if (sortDirection === "asc") {
+        setSortDirection("desc");
+      } else if (sortDirection === "desc") {
+        setSortDirection(null);
+        setSortKey(null);
+      } else {
+        setSortDirection("asc");
+        setSortKey(typedKey);
+      }
+    } else {
+      // New sort key
+      setSortKey(typedKey);
+      setSortDirection("asc");
+    }
+  };
+
+  // Sort ratings based on sort key and direction
+  const sortedRatings = useMemo(() => {
+    if (!storeData?.ratings || !sortKey || !sortDirection) {
+      return storeData?.ratings || [];
+    }
+
+    return [...storeData.ratings].sort((a, b) => {
+      // Handle nested user.name property
+      if (sortKey === "user.name") {
+        const aValue = a.user.name;
+        const bValue = b.user.name;
+        return sortDirection === "asc"
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      // Handle regular properties
+      const aValue = a[sortKey as keyof RatingWithUser];
+      const bValue = b[sortKey as keyof RatingWithUser];
+
+      if (aValue === null || aValue === undefined)
+        return sortDirection === "asc" ? -1 : 1;
+      if (bValue === null || bValue === undefined)
+        return sortDirection === "asc" ? 1 : -1;
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortDirection === "asc"
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      // For numeric values
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+      }
+
+      // For dates
+      if (aValue instanceof Date && bValue instanceof Date) {
+        return sortDirection === "asc"
+          ? aValue.getTime() - bValue.getTime()
+          : bValue.getTime() - aValue.getTime();
+      }
+
+      // For date strings
+      if (
+        typeof aValue === "string" &&
+        typeof bValue === "string" &&
+        !isNaN(Date.parse(aValue)) &&
+        !isNaN(Date.parse(bValue))
+      ) {
+        return sortDirection === "asc"
+          ? new Date(aValue).getTime() - new Date(bValue).getTime()
+          : new Date(bValue).getTime() - new Date(aValue).getTime();
+      }
+
+      return 0;
+    });
+  }, [storeData?.ratings, sortKey, sortDirection]);
 
   if (loading) {
     return (
@@ -147,42 +229,59 @@ function StoreOwnerDashboard() {
         </CardHeader>
         <CardContent>
           {storeData.ratings && storeData.ratings.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Rating</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Review</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {storeData.ratings.map((rating) => (
-                  <TableRow key={rating.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback>
-                            {rating.user.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{rating.user.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {rating.user.email}
-                          </div>
+            <SortableTable
+              data={sortedRatings}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              emptyMessage="No ratings found"
+              columns={[
+                {
+                  key: "user.name" as keyof RatingWithUser,
+                  label: "User",
+                  sortable: true,
+                  render: (rating) => (
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarFallback>
+                          {rating.user.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{rating.user.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {rating.user.email}
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getRatingVariant(rating.rating)}>
-                        {rating.rating} / 5
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
+                    </div>
+                  ),
+                },
+                {
+                  key: "rating" as keyof RatingWithUser,
+                  label: "Rating",
+                  sortable: true,
+                  render: (rating) => (
+                    <Badge variant={getRatingVariant(rating.rating)}>
+                      {rating.rating} / 5
+                    </Badge>
+                  ),
+                },
+                {
+                  key: "createdAt" as keyof RatingWithUser,
+                  label: "Date",
+                  sortable: true,
+                  render: (rating) => (
+                    <div className="text-sm">
                       {new Date(rating.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
+                    </div>
+                  ),
+                },
+                {
+                  key: "review" as keyof RatingWithUser,
+                  label: "Review",
+                  sortable: true,
+                  render: (rating) => (
+                    <div className="max-w-md">
                       {rating.review ? (
                         rating.review
                       ) : (
@@ -190,11 +289,11 @@ function StoreOwnerDashboard() {
                           No review provided
                         </span>
                       )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  ),
+                },
+              ]}
+            />
           ) : (
             <div className="text-center p-6 text-muted-foreground">
               No ratings yet. Ratings will appear here when users rate your

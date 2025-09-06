@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import { useAuthStore } from "../../store/auth";
@@ -7,36 +7,60 @@ import {
   LayoutDashboard,
   Users,
   Store,
-  Star,
   Settings,
   Home,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../../components/ui/tooltip";
 
 interface NavItemProps {
   to: string;
   icon: React.ReactNode;
   label: string;
   active: boolean;
+  isCollapsed: boolean;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ to, icon, label, active }) => {
+const NavItem: React.FC<NavItemProps> = ({
+  to,
+  icon,
+  label,
+  active,
+  isCollapsed,
+}) => {
   return (
-    <Link
-      to={to}
-      className={cn(
-        "flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100",
-        active && "bg-gray-100 text-gray-900"
-      )}
-    >
-      <span className="mr-3">{icon}</span>
-      <span className="text-sm font-medium">{label}</span>
-    </Link>
+    <TooltipProvider delayDuration={0}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link
+            to={to}
+            className={cn(
+              "flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100",
+              active && "bg-gray-100 text-gray-900"
+            )}
+          >
+            <span className="mr-3">{icon}</span>
+            {!isCollapsed && (
+              <span className="text-sm font-medium">{label}</span>
+            )}
+          </Link>
+        </TooltipTrigger>
+        {isCollapsed && <TooltipContent side="right">{label}</TooltipContent>}
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
 const Sidebar: React.FC = () => {
   const { user } = useAuthStore();
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (!user) return null;
 
@@ -74,12 +98,6 @@ const Sidebar: React.FC = () => {
           label: "Stores",
           active: path.startsWith("/admin/stores"),
         },
-        {
-          to: "/admin/ratings",
-          icon: <Star size={20} />,
-          label: "Ratings",
-          active: path.startsWith("/admin/ratings"),
-        },
       ];
     } else if (user.role === UserRole.STORE_OWNER) {
       return [
@@ -90,12 +108,7 @@ const Sidebar: React.FC = () => {
           label: "Dashboard",
           active: path === "/store-owner/dashboard",
         },
-        {
-          to: "/store-owner/ratings",
-          icon: <Star size={20} />,
-          label: "Ratings",
-          active: path.startsWith("/store-owner/ratings"),
-        },
+
         {
           to: "/store-owner/profile",
           icon: <Settings size={20} />,
@@ -113,12 +126,7 @@ const Sidebar: React.FC = () => {
           label: "Stores",
           active: path.startsWith("/user/stores"),
         },
-        {
-          to: "/user/ratings",
-          icon: <Star size={20} />,
-          label: "My Ratings",
-          active: path === "/user/ratings",
-        },
+
         {
           to: "/user/profile",
           icon: <Settings size={20} />,
@@ -132,9 +140,27 @@ const Sidebar: React.FC = () => {
   const navItems = getNavItems();
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 min-h-screen">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-xl font-semibold">Store Rating App</h2>
+    <aside
+      className={cn(
+        "bg-white border-r border-gray-200 min-h-screen transition-all duration-300 flex-shrink-0",
+        isCollapsed ? "w-16" : "w-64"
+      )}
+    >
+      <div
+        className={cn(
+          "px-6 py-4 border-b border-gray-200 flex items-center justify-between",
+          isCollapsed && "px-4 justify-center"
+        )}
+      >
+        {!isCollapsed && (
+          <h2 className="text-xl font-semibold">Store Rating</h2>
+        )}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-1 rounded-md text-gray-500 hover:bg-gray-100"
+        >
+          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
       </div>
       <nav className="p-4 space-y-1">
         {navItems.map((item, index) => (
@@ -144,6 +170,7 @@ const Sidebar: React.FC = () => {
             icon={item.icon}
             label={item.label}
             active={item.active}
+            isCollapsed={isCollapsed}
           />
         ))}
       </nav>

@@ -30,7 +30,7 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-2.5 flex justify-between items-center">
+    <header className="bg-white border-b border-gray-200 px-4 py-[12px] flex justify-between items-center">
       <div className="flex items-center space-x-4">
         <Link to="/" className="flex items-center">
           <span className="self-center text-xl font-semibold whitespace-nowrap">

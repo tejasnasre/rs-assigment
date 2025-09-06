@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import apiClient from "../../api/axios";
+import { adminApi } from "../../api/admin";
 import {
   Table,
   TableBody,
@@ -8,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
+
 import { Input } from "../../components/ui/input";
 import {
   Select,
@@ -19,6 +21,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { PlusIcon } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 interface User {
   id: string;
@@ -39,36 +42,35 @@ const UsersList: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingUserIds, setUpdatingUserIds] = useState<string[]>([]);
 
   // Filters
   const [searchFilter, setSearchFilter] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        // Create query parameters for filtering
-        const params = new URLSearchParams();
-        if (searchFilter) params.append("search", searchFilter);
-        if (roleFilter && roleFilter !== "all")
-          params.append("role", roleFilter);
-
-        const response = await apiClient.get(
-          `/admin/users?${params.toString()}`
-        );
-        setUsers(response.data.users);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching users:", err);
-        setError("Failed to load users. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchFilter, roleFilter]);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      // Create query parameters for filtering
+      const params = new URLSearchParams();
+      if (searchFilter) params.append("search", searchFilter);
+      if (roleFilter && roleFilter !== "all") params.append("role", roleFilter);
+
+      const response = await apiClient.get(`/admin/users?${params.toString()}`);
+      setUsers(response.data.users);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setError("Failed to load users. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFilterChange = (type: string, value: string) => {
     switch (type) {
@@ -80,6 +82,36 @@ const UsersList: React.FC = () => {
         break;
       default:
         break;
+    }
+  };
+
+  const handleRoleUpdate = async (userId: string, newRole: string) => {
+    // Check if already updating
+    if (updatingUserIds.includes(userId)) return;
+
+    // Add userId to updating list
+    setUpdatingUserIds((prev) => [...prev, userId]);
+
+    try {
+      const response = await adminApi.updateUserRole(userId, newRole);
+
+      if (response.data && response.data.user) {
+        // Update the user in the list
+        setUsers(
+          users.map((user) =>
+            user.id === userId
+              ? { ...user, role: response.data.user.role }
+              : user
+          )
+        );
+        toast.success("User role updated successfully");
+      }
+    } catch (error) {
+      console.error("Error updating role:", error);
+      toast.error("Failed to update user role");
+    } finally {
+      // Remove userId from updating list
+      setUpdatingUserIds((prev) => prev.filter((id) => id !== userId));
     }
   };
 
@@ -131,70 +163,108 @@ const UsersList: React.FC = () => {
       ) : error ? (
         <div className="text-center text-red-500 p-8">{error}</div>
       ) : (
-        <div className="bg-white rounded-md shadow overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.length === 0 ? (
+        <div className="bg-white rounded-md shadow h-[calc(100vh-20rem)] flex flex-col">
+          <div className="overflow-auto flex-1">
+            <Table className="min-w-[800px]">
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4">
-                    No users found
-                  </TableCell>
+                  <TableHead className="sticky top-0 bg-white">Name</TableHead>
+                  <TableHead className="sticky top-0 bg-white">Email</TableHead>
+                  <TableHead className="sticky top-0 bg-white">
+                    Address
+                  </TableHead>
+                  <TableHead className="sticky top-0 bg-white">Role</TableHead>
+                  <TableHead className="sticky top-0 bg-white">
+                    Status
+                  </TableHead>
+                  <TableHead className="sticky top-0 bg-white">
+                    Actions
+                  </TableHead>
                 </TableRow>
-              ) : (
-                users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.address || "—"}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          user.role === "system_administrator"
-                            ? "bg-purple-100 text-purple-800"
-                            : user.role === "store_owner"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {roleLabels[user.role] || user.role}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          user.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {user.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Link
-                          to={`/admin/users/${user.id}`}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          View
-                        </Link>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-4">
+                      No users found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium max-w-[150px] truncate">
+                        {user.name}
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {user.email}
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {user.address || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              user.role === "system_administrator"
+                                ? "bg-purple-100 text-purple-800"
+                                : user.role === "store_owner"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {roleLabels[user.role] || user.role}
+                          </span>
+                          <Select
+                            defaultValue={user.role}
+                            onValueChange={(value) =>
+                              handleRoleUpdate(user.id, value)
+                            }
+                            disabled={updatingUserIds.includes(user.id)}
+                          >
+                            <SelectTrigger className="w-32 h-7 text-xs">
+                              <SelectValue placeholder="Change role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="normal_user">
+                                Normal User
+                              </SelectItem>
+                              <SelectItem value="store_owner">
+                                Store Owner
+                              </SelectItem>
+                              <SelectItem value="system_administrator">
+                                Administrator
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            user.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {user.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Link
+                            to={`/admin/users/${user.id}`}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            View
+                          </Link>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
     </div>

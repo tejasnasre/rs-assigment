@@ -3,6 +3,7 @@ import { db } from "../db/index.js";
 import { users, stores, storeRatings } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 import { hashPassword } from "../utils/auth.utils.js";
+import { recalculateStoreRating } from "../utils/rating.utils.js";
 import type {
   CreateNormalUserRequest,
   CreateAdminUserRequest,
@@ -642,5 +643,45 @@ export const getStoreById = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error fetching store details:", error);
     res.status(500).json({ message: "Failed to fetch store details" });
+  }
+};
+
+// Recalculate ratings for all stores or a specific store
+export const recalculateStoreRatings = async (req: Request, res: Response) => {
+  try {
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Check if user is an admin
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Access denied. Admin role required." });
+    }
+
+    const { storeId } = req.query;
+
+    if (storeId && typeof storeId === "string") {
+      // Recalculate for a specific store
+      await recalculateStoreRating(storeId);
+      return res.status(200).json({
+        message: `Ratings recalculated successfully for store ${storeId}`,
+      });
+    } else {
+      // Recalculate for all stores
+      const allStores = await db.select({ id: stores.id }).from(stores);
+
+      for (const store of allStores) {
+        await recalculateStoreRating(store.id);
+      }
+
+      return res.status(200).json({
+        message: `Ratings recalculated successfully for ${allStores.length} stores`,
+      });
+    }
+  } catch (error) {
+    console.error("Error recalculating store ratings:", error);
+    res.status(500).json({ message: "Failed to recalculate store ratings" });
   }
 };
