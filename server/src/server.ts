@@ -25,15 +25,15 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Public and user routes
-app.use("/auth", userRouter);
+app.use("/api/auth", userRouter);
 
-app.use("/stores", storeRouter);
+app.use("/api/stores", storeRouter);
 
 // Store owner routes
-app.use("/store-owner", storeOwnerRouter);
+app.use("/api/store-owner", storeOwnerRouter);
 
 // Admin routes
-app.use("/admin", adminRouter);
+app.use("/api/admin", adminRouter);
 
 app.listen(PORT, () => {
   console.log(`server is listening on port ${PORT}`);
