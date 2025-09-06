@@ -41,9 +41,7 @@ const UsersList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Filters
-  const [nameFilter, setNameFilter] = useState("");
-  const [emailFilter, setEmailFilter] = useState("");
-  const [addressFilter, setAddressFilter] = useState("");
+  const [searchFilter, setSearchFilter] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
   useEffect(() => {
@@ -52,9 +50,7 @@ const UsersList: React.FC = () => {
       try {
         // Create query parameters for filtering
         const params = new URLSearchParams();
-        if (nameFilter) params.append("name", nameFilter);
-        if (emailFilter) params.append("email", emailFilter);
-        if (addressFilter) params.append("address", addressFilter);
+        if (searchFilter) params.append("search", searchFilter);
         if (roleFilter && roleFilter !== "all")
           params.append("role", roleFilter);
 
@@ -72,18 +68,12 @@ const UsersList: React.FC = () => {
     };
 
     fetchUsers();
-  }, [nameFilter, emailFilter, addressFilter, roleFilter]);
+  }, [searchFilter, roleFilter]);
 
   const handleFilterChange = (type: string, value: string) => {
     switch (type) {
-      case "name":
-        setNameFilter(value);
-        break;
-      case "email":
-        setEmailFilter(value);
-        break;
-      case "address":
-        setAddressFilter(value);
+      case "search":
+        setSearchFilter(value);
         break;
       case "role":
         setRoleFilter(value);
@@ -107,29 +97,13 @@ const UsersList: React.FC = () => {
 
       <div className="bg-white rounded-md shadow mb-6 p-4">
         <h2 className="text-lg font-medium mb-4">Filters</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1">Search</label>
             <Input
-              placeholder="Filter by name"
-              value={nameFilter}
-              onChange={(e) => handleFilterChange("name", e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <Input
-              placeholder="Filter by email"
-              value={emailFilter}
-              onChange={(e) => handleFilterChange("email", e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Address</label>
-            <Input
-              placeholder="Filter by address"
-              value={addressFilter}
-              onChange={(e) => handleFilterChange("address", e.target.value)}
+              placeholder="Search by name, email or address"
+              value={searchFilter}
+              onChange={(e) => handleFilterChange("search", e.target.value)}
             />
           </div>
           <div>

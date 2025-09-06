@@ -301,7 +301,7 @@ export const createStore = async (req: Request, res: Response) => {
  */
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const { role, name, email, address } = req.query;
+    const { role, search } = req.query;
 
     // Get all users first
     let usersList = await db
@@ -328,23 +328,13 @@ export const getAllUsers = async (req: Request, res: Response) => {
       usersList = usersList.filter((user) => user.role === typedRole);
     }
 
-    if (name && typeof name === "string") {
-      usersList = usersList.filter((user) =>
-        user.name.toLowerCase().includes(name.toLowerCase())
-      );
-    }
-
-    if (email && typeof email === "string") {
-      usersList = usersList.filter((user) =>
-        user.email.toLowerCase().includes(email.toLowerCase())
-      );
-    }
-
-    if (address && typeof address === "string") {
+    if (search && typeof search === "string") {
+      const searchLower = search.toLowerCase();
       usersList = usersList.filter(
         (user) =>
-          user.address &&
-          user.address.toLowerCase().includes(address.toLowerCase())
+          user.name.toLowerCase().includes(searchLower) ||
+          user.email.toLowerCase().includes(searchLower) ||
+          (user.address && user.address.toLowerCase().includes(searchLower))
       );
     }
 
@@ -431,9 +421,19 @@ export const getUserDetails = async (req: Request, res: Response) => {
     const user = userDetails[0];
 
     // Create response object with user details
+    interface StoreResponse {
+      id: string;
+      name: string;
+      email: string;
+      address: string;
+      ownerId: string;
+      averageRating: string | null;
+      totalRatings: number | null;
+    }
+
     interface ResponseType {
       user: typeof user;
-      stores?: (typeof stores.$inferSelect)[];
+      stores?: StoreResponse[];
     }
 
     const response: ResponseType = { user };
@@ -441,7 +441,15 @@ export const getUserDetails = async (req: Request, res: Response) => {
     // If the user is a store owner, fetch their store details including rating
     if (user && user.role === "store_owner") {
       const userStores = await db
-        .select()
+        .select({
+          id: stores.id,
+          name: stores.name,
+          email: stores.email,
+          address: stores.address,
+          ownerId: stores.ownerId,
+          averageRating: stores.averageRating,
+          totalRatings: stores.totalRatings,
+        })
         .from(stores)
         .where(eq(stores.ownerId, userId));
 

@@ -12,10 +12,12 @@ This is a full-stack application built with React, TypeScript, and Vite for the 
 
 ```
 testuser1@gmail.com - TestUser@1234
+testuser2@gmail.com - TestUser2@1234
 ```
 
 ```
 teststore1@gmail.com - Teststore@123
+teststore2@gmail.com - Teststore2@123
 ```
 
 ## Project Structure

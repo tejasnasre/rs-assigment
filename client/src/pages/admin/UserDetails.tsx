@@ -34,8 +34,10 @@ interface Store {
   name: string;
   email: string;
   address: string;
-  averageRating: number;
-  totalRatings: number;
+  ownerId: string;
+  // Add default values for these properties as they might not be present
+  averageRating?: number;
+  totalRatings?: number;
 }
 
 const roleLabels: Record<string, string> = {
@@ -45,7 +47,7 @@ const roleLabels: Record<string, string> = {
 };
 
 const UserDetails: React.FC = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const { id } = useParams<{ id: string }>();
   const [user, setUser] = useState<User | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,21 +55,29 @@ const UserDetails: React.FC = () => {
 
   useEffect(() => {
     const fetchUserDetails = async () => {
-      if (!userId) return;
+      if (!id) {
+        setError("No user ID provided");
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
       try {
-        const response = await apiClient.get(`/admin/users/${userId}`);
-        setUser(response.data.user);
+        const response = await apiClient.get(`/admin/users/${id}`);
 
-        // If the user has stores, set them
-        if (response.data.stores) {
-          setStores(response.data.stores);
+        if (response.data && response.data.user) {
+          setUser(response.data.user);
+
+          // If the user has stores, set them
+          if (response.data.stores && Array.isArray(response.data.stores)) {
+            setStores(response.data.stores);
+          } else {
+            setStores([]);
+          }
+        } else {
+          setError("User data not found in the response");
         }
-
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching user details:", err);
+      } catch {
         setError("Failed to load user details");
       } finally {
         setLoading(false);
@@ -75,12 +85,22 @@ const UserDetails: React.FC = () => {
     };
 
     fetchUserDetails();
-  }, [userId]);
+  }, [id]);
 
   // Function to render stars based on rating
-  const renderRatingStars = (rating: number) => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
+  const renderRatingStars = (rating: number | undefined) => {
+    // Default to 0 if rating is undefined
+    const actualRating = rating ?? 0;
+    const fullStars = Math.floor(actualRating);
+    const hasHalfStar = actualRating % 1 >= 0.5;
+
+    // Find the store that matches this rating to get total ratings
+    const store = stores.find((s) => {
+      const storeRating = s.averageRating
+        ? parseFloat(s.averageRating.toString())
+        : 0;
+      return Math.abs(storeRating - actualRating) < 0.01; // Use a small epsilon for float comparison
+    });
 
     return (
       <div className="flex items-center">
@@ -110,8 +130,7 @@ const UserDetails: React.FC = () => {
         )}
 
         <span className="ml-2 text-sm text-gray-600">
-          {typeof rating === "number" ? rating.toFixed(1) : "0.0"} (
-          {stores.find((s) => s.averageRating === rating)?.totalRatings || 0})
+          {actualRating.toFixed(1)} ({store?.totalRatings || 0})
         </span>
       </div>
     );
@@ -266,7 +285,11 @@ const UserDetails: React.FC = () => {
                       <TableCell>{store.email}</TableCell>
                       <TableCell>{store.address}</TableCell>
                       <TableCell>
-                        {renderRatingStars(store.averageRating)}
+                        {renderRatingStars(
+                          store.averageRating
+                            ? parseFloat(store.averageRating.toString())
+                            : 0
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
