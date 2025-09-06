@@ -3,10 +3,7 @@ import { db } from "../db/index.js";
 import { stores, storeRatings } from "../db/schema.js";
 import { eq, asc, desc, like, sql } from "drizzle-orm";
 
-/**
- * Get a list of all active stores
- * This can be used by any authenticated user
- */
+// Get a list of all active stores*This can be used by any authenticated user
 export const getAllStores = async (req: Request, res: Response) => {
   try {
     // Get pagination parameters from query
@@ -80,10 +77,8 @@ export const getAllStores = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Search for stores by name and/or address
- * This can be used by any authenticated user
- */
+// Search for stores by name and/or address
+// This can be used by any authenticated user
 export const searchStores = async (req: Request, res: Response) => {
   try {
     // Get search parameters
@@ -153,9 +148,7 @@ export const searchStores = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Get detailed information about a specific store, including user's rating if any
- */
+// Get detailed information about a specific store, including user's rating if any
 export const getStoreDetails = async (req: Request, res: Response) => {
   try {
     if (!req.user || !req.user.userId) {
@@ -219,9 +212,7 @@ export const getStoreDetails = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Submit a rating for a store
- */
+// Submit a rating for a store
 export const submitStoreRating = async (req: Request, res: Response) => {
   try {
     if (!req.user || !req.user.userId) {
@@ -290,9 +281,7 @@ export const submitStoreRating = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Update an existing rating for a store
- */
+// Update an existing rating for a store
 export const updateStoreRating = async (req: Request, res: Response) => {
   try {
     if (!req.user || !req.user.userId) {
@@ -349,5 +338,36 @@ export const updateStoreRating = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error updating rating:", error);
     res.status(500).json({ message: "Failed to update rating" });
+  }
+};
+
+// Get all ratings for a specific store
+export const getStoreRatings = async (req: Request, res: Response) => {
+  try {
+    const { storeId } = req.params;
+
+    if (!storeId) {
+      return res.status(400).json({ message: "Store ID is required" });
+    }
+
+    // Get all ratings for this store
+    const ratings = await db
+      .select({
+        id: storeRatings.id,
+        storeId: storeRatings.storeId,
+        userId: storeRatings.userId,
+        rating: storeRatings.rating,
+        review: storeRatings.review,
+        createdAt: storeRatings.createdAt,
+        updatedAt: storeRatings.updatedAt,
+      })
+      .from(storeRatings)
+      .where(eq(storeRatings.storeId, storeId))
+      .orderBy(desc(storeRatings.createdAt));
+
+    res.status(200).json(ratings);
+  } catch (error) {
+    console.error("Error fetching store ratings:", error);
+    res.status(500).json({ message: "Failed to fetch store ratings" });
   }
 };

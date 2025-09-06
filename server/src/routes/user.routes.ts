@@ -5,13 +5,19 @@ import {
   logoutUser,
   updatePassword,
 } from "../controller/user.controller.js";
-import { authenticate, authorize } from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
 // Public routes
+
+//Login
 router.post("/login", loginUser);
+
+// Singup
 router.post("/signup", createUser);
+
+// Logout
 router.post("/logout", logoutUser);
 
 // Protected routes
@@ -21,15 +27,5 @@ router.get("/profile", authenticate, (req, res) => {
 
 // Normal user routes
 router.put("/update-password", authenticate, updatePassword);
-
-// Admin-only routes (example)
-router.get(
-  "/admin",
-  authenticate,
-  authorize(["system_administrator"]),
-  (req, res) => {
-    res.status(200).json({ message: "Admin access granted" });
-  }
-);
 
 export default router;

@@ -24,9 +24,10 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// Public and user routes
+// User Route
 app.use("/api/auth", userRouter);
 
+// Store Route
 app.use("/api/stores", storeRouter);
 
 // Store owner routes

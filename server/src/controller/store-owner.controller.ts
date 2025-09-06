@@ -3,9 +3,7 @@ import { db } from "../db/index.js";
 import { stores, storeRatings, users } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 
-/**
- * Get the store owned by the authenticated store owner
- */
+// Get the store owned by the authenticated store owner
 export const getStoreOwnerStore = async (req: Request, res: Response) => {
   try {
     if (!req.user || !req.user.userId) {
@@ -67,9 +65,7 @@ export const getStoreOwnerStore = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Get all ratings for the store owned by the authenticated store owner
- */
+// Get all ratings for the store owned by the authenticated store owner
 export const getStoreOwnerRatings = async (req: Request, res: Response) => {
   try {
     if (!req.user || !req.user.userId) {
@@ -143,9 +139,7 @@ export const getStoreOwnerRatings = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Get store with all ratings for the authenticated store owner
- */
+// Get store with all ratings for the authenticated store owner
 export const getStoreWithRatings = async (req: Request, res: Response) => {
   try {
     if (!req.user || !req.user.userId) {

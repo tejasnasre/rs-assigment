@@ -17,10 +17,9 @@ declare global {
   }
 }
 
-/**
- * Authentication middleware to protect routes
- * Verifies JWT token and sets user context for RLS
- */
+//  Authentication middleware to protect routes
+//  Verifies JWT token and sets user context for RLS
+
 export const authenticate = async (
   req: Request,
   res: Response,
@@ -74,10 +73,8 @@ export const authenticate = async (
   }
 };
 
-/**
- * Role-based authorization middleware
- * @param roles Array of allowed roles
- */
+// Role-based authorization middleware
+
 export const authorize = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {

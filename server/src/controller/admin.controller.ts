@@ -8,11 +8,10 @@ import type {
   CreateAdminUserRequest,
   CreateStoreOwnerRequest,
   CreateStoreRequest,
+  UpdateUserRoleRequest,
 } from "../types/admin.types.js";
 
-/**
- * Add a new normal user as an admin
- */
+// Add a new normal user as an admin
 export const createNormalUser = async (req: Request, res: Response) => {
   try {
     const { name, email, password, address }: CreateNormalUserRequest =
@@ -75,9 +74,7 @@ export const createNormalUser = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Add a new admin user (only super admins should be able to do this)
- */
+// Add a new admin user (only super admins should be able to do this)
 export const createAdminUser = async (req: Request, res: Response) => {
   try {
     const { name, email, password, address }: CreateAdminUserRequest = req.body;
@@ -139,9 +136,7 @@ export const createAdminUser = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Add a new store owner user
- */
+// Add a new store owner user
 export const createStoreOwner = async (req: Request, res: Response) => {
   try {
     const { name, email, password, address }: CreateStoreOwnerRequest =
@@ -204,9 +199,7 @@ export const createStoreOwner = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Add a new store (and optionally link it to an existing store owner)
- */
+// Add a new store (and optionally link it to an existing store owner)
 export const createStore = async (req: Request, res: Response) => {
   try {
     const {
@@ -296,9 +289,7 @@ export const createStore = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Get all users (with optional filtering by role, name, email, address)
- */
+// Get all users (with optional filtering by role, name, email, address)
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const { role, search } = req.query;
@@ -347,9 +338,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Get all stores
- */
+// Get all stores
 export const getAllStores = async (req: Request, res: Response) => {
   try {
     const { name, email, address } = req.query;
@@ -386,9 +375,7 @@ export const getAllStores = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Get user details with store rating if they're a store owner
- */
+// Get user details with store rating if they're a store owner
 export const getUserDetails = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
@@ -465,9 +452,7 @@ export const getUserDetails = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Get dashboard statistics
- */
+// Get dashboard statistics
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
     // Get total users count
@@ -494,9 +479,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Get all store owners for admin to assign to stores
- */
+// Get all store owners for admin to assign to stores
 export const getAllStoreOwners = async (req: Request, res: Response) => {
   try {
     // Get all users with store_owner role
@@ -513,5 +496,151 @@ export const getAllStoreOwners = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error fetching store owners:", error);
     res.status(500).json({ message: "Failed to fetch store owners" });
+  }
+};
+
+// Update a user's role
+export const updateUserRole = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { role }: UpdateUserRoleRequest = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    if (!role) {
+      return res.status(400).json({ message: "Role is required" });
+    }
+
+    // Validate role is one of the allowed values
+    if (
+      !["system_administrator", "normal_user", "store_owner"].includes(role)
+    ) {
+      return res.status(400).json({
+        message:
+          "Invalid role. Role must be one of: system_administrator, normal_user, store_owner",
+      });
+    }
+
+    // Check if user exists
+    const userExists = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (userExists.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update the user's role
+    const result = await db
+      .update(users)
+      .set({
+        role,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(users.id, userId))
+      .returning({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        isActive: users.isActive,
+        updatedAt: users.updatedAt,
+      });
+
+    const updatedUser = result[0];
+    if (!updatedUser) {
+      return res.status(500).json({ message: "Failed to update user role" });
+    }
+
+    res.status(200).json({
+      message: "User role updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error updating user role:", error);
+    res.status(500).json({ message: "Failed to update user role" });
+  }
+};
+
+// Get detailed information about a specific store by its ID his is for admin use only
+export const getStoreById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: "Store ID is required" });
+    }
+
+    // Get store details
+    const storeResults = await db
+      .select({
+        id: stores.id,
+        name: stores.name,
+        address: stores.address,
+        email: stores.email,
+        phone: stores.phone,
+        description: stores.description,
+        averageRating: stores.averageRating,
+        totalRatings: stores.totalRatings,
+        isActive: stores.isActive,
+        ownerId: stores.ownerId,
+        createdAt: stores.createdAt,
+        updatedAt: stores.updatedAt,
+      })
+      .from(stores)
+      .where(eq(stores.id, id))
+      .limit(1);
+
+    if (storeResults.length === 0) {
+      return res.status(404).json({ message: "Store not found" });
+    }
+
+    const storeData = storeResults[0];
+
+    // Get store owner details if ownerId exists
+    let owner = null;
+    if (storeData && storeData.ownerId) {
+      const ownerResults = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+        })
+        .from(users)
+        .where(eq(users.id, storeData.ownerId))
+        .limit(1);
+
+      if (ownerResults.length > 0) {
+        owner = ownerResults[0];
+      }
+    }
+
+    // Get recent ratings for the store
+    const ratingsResults = await db
+      .select({
+        id: storeRatings.id,
+        rating: storeRatings.rating,
+        review: storeRatings.review,
+        userId: storeRatings.userId,
+        createdAt: storeRatings.createdAt,
+      })
+      .from(storeRatings)
+      .where(eq(storeRatings.storeId, id))
+      .orderBy(sql`${storeRatings.createdAt} DESC`)
+      .limit(5);
+
+    res.status(200).json({
+      store: storeData,
+      owner,
+      recentRatings: ratingsResults,
+    });
+  } catch (error) {
+    console.error("Error fetching store details:", error);
+    res.status(500).json({ message: "Failed to fetch store details" });
   }
 };

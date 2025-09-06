@@ -12,8 +12,14 @@ const router = Router();
 router.use(authenticate);
 
 // Routes for store owner dashboard
+
+// Route to get store owner's store details
 router.get("/store", getStoreOwnerStore);
+
+// Route to get store owner ratings
 router.get("/ratings", getStoreOwnerRatings);
+
+// Route to get store with ratings
 router.get("/store-with-ratings", getStoreWithRatings);
 
 export default router;

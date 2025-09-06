@@ -9,6 +9,7 @@ import {
 } from "../utils/auth.utils.js";
 import type { LoginRequest, SignupRequest } from "../types/auth.types.js";
 
+// Create a new user
 export const createUser = async (req: Request, res: Response) => {
   try {
     const { name, email, password, address }: SignupRequest = req.body;
@@ -80,9 +81,7 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Login a user
- */
+// Login a user
 export const loginUser = async (req: Request, res: Response) => {
   try {
     const { email, password, role }: LoginRequest = req.body;
@@ -177,9 +176,7 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Logout a user by clearing the auth cookie
- */
+// Logout a user by clearing the auth cookie
 export const logoutUser = async (req: Request, res: Response) => {
   try {
     // Clear the auth cookie
@@ -196,9 +193,7 @@ export const logoutUser = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Update a user's password - requires authentication
- */
+// Update a user's password - requires authentication
 export const updatePassword = async (req: Request, res: Response) => {
   try {
     if (!req.user || !req.user.userId) {
